@@ -17,6 +17,10 @@ public class GameFlowManager : SingletonMono<GameFlowManager>
     private int currentLevel = 0;
     private bool isLoadingLevel = false;
 
+    private LevelMono currentLevelInstance;
+
+    public int CurrentLevelIndex => currentLevel;
+
     public void PlayCurrentLevel()
     {
         PlayLevel(currentLevel);
@@ -34,33 +38,13 @@ public class GameFlowManager : SingletonMono<GameFlowManager>
 
     private IEnumerator LoadGameplayAndSpawnLevel(int levelIndex)
     {
-        if (levelLibrary == null)
+        if (!IsValidLevelIndex(levelIndex))
         {
-            Debug.LogError("[GameFlowManager] LevelLibrary 没有赋值。");
-            yield break;
-        }
-
-        if (levelLibrary.levels == null || levelLibrary.levels.Count == 0)
-        {
-            Debug.LogError("[GameFlowManager] LevelLibrary 中没有配置任何关卡。");
-            yield break;
-        }
-
-        if (levelIndex < 0 || levelIndex >= levelLibrary.levels.Count)
-        {
-            Debug.LogError($"[GameFlowManager] 关卡索引越界：{levelIndex}");
-            yield break;
-        }
-
-        LevelMono levelPrefab = levelLibrary.levels[levelIndex];
-
-        if (levelPrefab == null)
-        {
-            Debug.LogError($"[GameFlowManager] LevelLibrary 中第 {levelIndex} 个关卡为空。");
             yield break;
         }
 
         isLoadingLevel = true;
+        currentLevel = levelIndex;
 
         AsyncOperation loadOperation = SceneManager.LoadSceneAsync(gameplaySceneName, LoadSceneMode.Single);
 
@@ -76,11 +60,87 @@ public class GameFlowManager : SingletonMono<GameFlowManager>
             yield return null;
         }
 
-        LevelMono levelInstance = Instantiate(levelPrefab, Vector3.zero, Quaternion.identity);
-        Debug.Log("GameFlowManager is initializing level");
-        levelInstance.Init();
+        SpawnThisLevel(currentLevel);
 
         isLoadingLevel = false;
+    }
+
+    public void RestartCurrentLevel(LevelMono levelToDestroy)
+    {
+        if (isLoadingLevel)
+        {
+            return;
+        }
+
+        StartCoroutine(RestartCurrentLevelCoroutine(levelToDestroy));
+    }
+
+    private IEnumerator RestartCurrentLevelCoroutine(LevelMono levelToDestroy)
+    {
+        if (!IsValidLevelIndex(currentLevel))
+        {
+            yield break;
+        }
+
+        isLoadingLevel = true;
+
+        if (levelToDestroy != null)
+        {
+            Destroy(levelToDestroy.gameObject);
+        }
+        else if (currentLevelInstance != null)
+        {
+            Destroy(currentLevelInstance.gameObject);
+        }
+
+        currentLevelInstance = null;
+
+        // Destroy 会在当前帧结束后真正执行，所以等一帧，避免新旧 Level / Player 同时存在
+        yield return null;
+
+        SpawnThisLevel(currentLevel);
+
+        isLoadingLevel = false;
+    }
+
+    private void SpawnThisLevel(int levelIndex)
+    {
+        LevelMono levelPrefab = levelLibrary.levels[levelIndex];
+
+        if (levelPrefab == null)
+        {
+            Debug.LogError($"[GameFlowManager] LevelLibrary 中第 {levelIndex} 个关卡为空。");
+            return;
+        }
+
+        currentLevelInstance = Instantiate(levelPrefab, Vector3.zero, Quaternion.identity);
+
+        Debug.Log("GameFlowManager is initializing level");
+
+        currentLevelInstance.Init();
+    }
+
+    private bool IsValidLevelIndex(int levelIndex)
+    {
+        if (levelLibrary == null)
+        {
+            Debug.LogError("[GameFlowManager] LevelLibrary 没有赋值。");
+            return false;
+        }
+
+        if (levelLibrary.levels == null || levelLibrary.levels.Count == 0)
+        {
+            Debug.LogError("[GameFlowManager] LevelLibrary 中没有配置任何关卡。");
+            return false;
+        }
+
+        if (levelIndex < 0 || levelIndex >= levelLibrary.levels.Count)
+        {
+            Debug.LogError($"[GameFlowManager] 关卡索引越界：{levelIndex}");
+            return false;
+        }
+
+        return true;
     }
 
     public void GoIntoLobby()

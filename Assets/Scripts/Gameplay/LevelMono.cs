@@ -4,7 +4,7 @@ using UnityEngine;
 [DefaultExecutionOrder(-200)]
 public class LevelMono : MonoBehaviour
 {
-    [SerializeField] private int anchorCount;
+    [SerializeField] public int anchorCount;
 
     [Header("Player Spawn")]
     [SerializeField] private PlayerMono playerPrefab;
@@ -38,12 +38,12 @@ public class LevelMono : MonoBehaviour
         }
 
         //Debug.Log("levelMono.Init");
-        IsInitialized = true;
+        
         SpawnPlayerIfNeeded();
         CacheChildWorlds();
 
-        GameplayManager.Instance.Init(anchorCount);
-
+        GameplayManager.Instance.Init(this);
+        IsInitialized = true;
         RefreshCurrentActiveWorld(true);
     }
 
@@ -91,7 +91,7 @@ public class LevelMono : MonoBehaviour
             Debug.LogWarning($"{nameof(LevelMono)} 没有配置 Player Spawn Point，将使用 LevelMono 自身位置生成玩家。", this);
         }
 
-        Transform parent = playerParent != null ? playerParent : null;
+        Transform parent = playerParent != null ? playerParent : transform;
 
         Debug.Log("玩家生成");
         playerInstance = Instantiate(
@@ -100,6 +100,7 @@ public class LevelMono : MonoBehaviour
             spawnRotation,
             parent
         );
+        
     }
 
     public void RefreshCurrentActiveWorld(bool forceRefresh = false)
@@ -289,5 +290,20 @@ public class LevelMono : MonoBehaviour
             world.RefreshChildObstacles();
             world.SetWorldActive(false);
         }
+    }
+    
+    private void OnDestroy()
+    {
+        if (playerInstance == null)
+        {
+            return;
+        }
+
+        if (!playerInstance.transform.IsChildOf(transform))
+        {
+            Destroy(playerInstance.gameObject);
+        }
+
+        playerInstance = null;
     }
 }

@@ -9,13 +9,19 @@ public class GameplayManager : SingletonMono<GameplayManager>
     private int currentAnchorCount = 0;
     private int currentStarCount = 0;
     private bool isPaused = false;
+    private LevelMono levelMono;
     public bool IsPaused => isPaused;
-    public void Init(int anchorCount)
+    public void Init(LevelMono levelMono)
     {
-        currentAnchorCount = anchorCount;
+        this.levelMono = levelMono;
+
+        currentAnchorCount = levelMono.anchorCount;
+        currentStarCount = 0;
+        isPaused = false;
+
         GameplayUIManager.Instance.UpdateAnchorUI(currentAnchorCount);
     }
-
+    
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Escape))
@@ -40,7 +46,33 @@ public class GameplayManager : SingletonMono<GameplayManager>
 
     public void WinThisLevel()
     {
+        GameplayUIManager.Instance.ShowWinPage();
+        Pause();
+    }
+
+    public void NextLevel()
+    {
         
+    }
+    
+    public void RestartLevel()
+    {
+        isPaused = false;
+
+        if (GameplayUIManager.Instance != null)
+        {
+            GameplayUIManager.Instance.HideSettingUI();
+        }
+
+        if (GameFlowManager.Instance == null)
+        {
+            Debug.LogError("[GameplayManager] 找不到 GameFlowManager，无法重启关卡。");
+            return;
+        }
+
+        GameFlowManager.Instance.RestartCurrentLevel(levelMono);
+
+        levelMono = null;
     }
 
     public void Pause()
