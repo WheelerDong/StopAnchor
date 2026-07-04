@@ -3,8 +3,8 @@ using UnityEngine;
 [DefaultExecutionOrder(-100)]
 public class CameraWorldFollower : MonoBehaviour
 {
-    [Header("Target")]
-    [SerializeField] private Transform player;
+    [Header("References")]
+    [SerializeField] private LevelMono level;
 
     [Header("Move Settings")]
     [SerializeField] private float moveSpeed = 8f;
@@ -17,19 +17,13 @@ public class CameraWorldFollower : MonoBehaviour
 
     private void Awake()
     {
-        if (player == null)
-        {
-            PlayerMono playerMono = FindObjectOfType<PlayerMono>();
-
-            if (playerMono != null)
-            {
-                player = playerMono.transform;
-            }
-        }
+        ResolveLevel();
     }
 
     private void Start()
     {
+        EnsureLevelReady();
+
         RefreshCurrentWorld();
 
         if (snapOnStart)
@@ -40,6 +34,7 @@ public class CameraWorldFollower : MonoBehaviour
 
     private void Update()
     {
+        EnsureLevelReady();
         RefreshCurrentWorld();
     }
 
@@ -48,20 +43,29 @@ public class CameraWorldFollower : MonoBehaviour
         MoveCameraToCurrentWorld();
     }
 
-    private void RefreshCurrentWorld()
+    private void EnsureLevelReady()
     {
-        if (player == null)
+        ResolveLevel();
+
+        if (level != null && !level.IsInitialized)
         {
-            WorldMono.SetCurrentActiveWorld(null);
-            currentWorld = null;
+            level.Init();
+        }
+    }
+
+    private void ResolveLevel()
+    {
+        if (level != null)
+        {
             return;
         }
 
-        WorldMono world = WorldMono.FindWorldByPosition(player.position);
+        level = FindObjectOfType<LevelMono>();
+    }
 
-        WorldMono.SetCurrentActiveWorld(world);
-
-        currentWorld = WorldMono.CurrentActiveWorld;
+    private void RefreshCurrentWorld()
+    {
+        currentWorld = level != null ? level.CurrentActiveWorld : null;
     }
 
     private void MoveCameraToCurrentWorld()

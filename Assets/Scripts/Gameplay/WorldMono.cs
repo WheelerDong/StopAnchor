@@ -4,10 +4,6 @@ using UnityEngine;
 [RequireComponent(typeof(Collider2D))]
 public class WorldMono : MonoBehaviour
 {
-    private static readonly List<WorldMono> registeredWorlds = new List<WorldMono>();
-
-    public static WorldMono CurrentActiveWorld { get; private set; }
-
     [Header("World Settings")]
     [SerializeField] private Transform worldCenter;
 
@@ -17,7 +13,6 @@ public class WorldMono : MonoBehaviour
     [Header("Rotation Settings")]
     [SerializeField] private float rotateSpeed = 180f;
 
-    // 当前这个 World 自己记录的旋转角度
     [SerializeField] private float currentGlobalAngle = 0f;
 
     [Header("Select Priority")]
@@ -29,12 +24,21 @@ public class WorldMono : MonoBehaviour
     private readonly List<ObstacleMono> obstacles = new List<ObstacleMono>();
 
     private Collider2D worldCollider;
+    private bool initialized = false;
 
     public Transform WorldCenter
     {
         get
         {
             return worldCenter != null ? worldCenter : transform;
+        }
+    }
+
+    public bool ActiveOnStart
+    {
+        get
+        {
+            return activeOnStart;
         }
     }
 
@@ -54,7 +58,6 @@ public class WorldMono : MonoBehaviour
         }
     }
 
-    // 兼容旧接口命名
     public bool EnableRotationRecord
     {
         get
@@ -65,45 +68,13 @@ public class WorldMono : MonoBehaviour
 
     private void Awake()
     {
-        worldCollider = GetComponent<Collider2D>();
-        worldCollider.isTrigger = true;
-
-        if (worldCenter == null)
-        {
-            worldCenter = transform;
-        }
-
-        CacheChildObstacles();
-    }
-
-    private void OnEnable()
-    {
-        if (!registeredWorlds.Contains(this))
-        {
-            registeredWorlds.Add(this);
-        }
-    }
-
-    private void Start()
-    {
-        if (activeOnStart)
-        {
-            SetCurrentActiveWorld(this);
-        }
-    }
-
-    private void OnDisable()
-    {
-        registeredWorlds.Remove(this);
-
-        if (CurrentActiveWorld == this)
-        {
-            SetCurrentActiveWorld(null);
-        }
+        EnsureInitialized();
     }
 
     private void Update()
     {
+        EnsureInitialized();
+
         if (!isActiveWorld)
         {
             return;
@@ -117,17 +88,35 @@ public class WorldMono : MonoBehaviour
         }
     }
 
+    private void EnsureInitialized()
+    {
+        if (initialized)
+        {
+            return;
+        }
+
+        worldCollider = GetComponent<Collider2D>();
+        worldCollider.isTrigger = true;
+
+        if (worldCenter == null)
+        {
+            worldCenter = transform;
+        }
+
+        CacheChildObstacles();
+
+        initialized = true;
+    }
+
     private bool HandleRotateInput()
     {
         float input = 0f;
 
-        // A：逆时针
         if (Input.GetKey(KeyCode.A))
         {
             input += 1f;
         }
 
-        // D：顺时针
         if (Input.GetKey(KeyCode.D))
         {
             input -= 1f;
@@ -186,6 +175,8 @@ public class WorldMono : MonoBehaviour
 
     public void RefreshChildObstacles()
     {
+        EnsureInitialized();
+
         CacheChildObstacles();
 
         if (isActiveWorld)
@@ -196,60 +187,15 @@ public class WorldMono : MonoBehaviour
 
     public void SetWorldActive(bool active)
     {
-        if (active)
-        {
-            SetCurrentActiveWorld(this);
-        }
-        else
-        {
-            if (CurrentActiveWorld == this)
-            {
-                SetCurrentActiveWorld(null);
-            }
-            else
-            {
-                SetInternalActiveState(false);
-            }
-        }
-    }
+        EnsureInitialized();
 
-    public static void SetCurrentActiveWorld(WorldMono world)
-    {
-        if (world != null)
-        {
-            if (!world.isActiveAndEnabled || !world.gameObject.activeInHierarchy)
-            {
-                world = null;
-            }
-        }
-
-        if (CurrentActiveWorld == world)
-        {
-            if (CurrentActiveWorld != null && !CurrentActiveWorld.isActiveWorld)
-            {
-                CurrentActiveWorld.SetInternalActiveState(true);
-            }
-
-            return;
-        }
-
-        if (CurrentActiveWorld != null)
-        {
-            CurrentActiveWorld.SetInternalActiveState(false);
-        }
-
-        CurrentActiveWorld = world;
-
-        if (CurrentActiveWorld != null)
-        {
-            CurrentActiveWorld.SetInternalActiveState(true);
-        }
-    }
-
-    private void SetInternalActiveState(bool active)
-    {
         if (isActiveWorld == active)
         {
+            if (isActiveWorld)
+            {
+                UpdateChildObstacles();
+            }
+
             return;
         }
 
@@ -274,7 +220,6 @@ public class WorldMono : MonoBehaviour
         }
     }
 
-    // 兼容旧接口：以前你可能在其他脚本里调用了这个
     public void SetEnableRotationRecord(bool enable)
     {
         SetWorldActive(enable);
@@ -285,7 +230,6 @@ public class WorldMono : MonoBehaviour
         return currentGlobalAngle;
     }
 
-    // 保留旧拼写接口，避免其他脚本里已经写了 Globel 导致报错
     public float GetCurrentGlobelAngle()
     {
         return currentGlobalAngle;
@@ -293,6 +237,8 @@ public class WorldMono : MonoBehaviour
 
     public bool ContainsPoint(Vector2 point)
     {
+        EnsureInitialized();
+
         if (worldCollider == null)
         {
             return false;
@@ -309,59 +255,6 @@ public class WorldMono : MonoBehaviour
         }
 
         return worldCollider.OverlapPoint(point);
-    }
-
-    public static WorldMono FindWorldByPosition(Vector2 playerPosition)
-    {
-        WorldMono bestWorld = null;
-
-        int bestPriority = int.MinValue;
-        float bestDistanceSqr = float.MaxValue;
-
-        for (int i = registeredWorlds.Count - 1; i >= 0; i--)
-        {
-            WorldMono world = registeredWorlds[i];
-
-            if (world == null)
-            {
-                registeredWorlds.RemoveAt(i);
-                continue;
-            }
-
-            if (!world.ContainsPoint(playerPosition))
-            {
-                continue;
-            }
-
-            int currentPriority = world.Priority;
-
-            float currentDistanceSqr =
-                ((Vector2)world.WorldCenter.position - playerPosition).sqrMagnitude;
-
-            bool shouldSelect = false;
-
-            if (bestWorld == null)
-            {
-                shouldSelect = true;
-            }
-            else if (currentPriority > bestPriority)
-            {
-                shouldSelect = true;
-            }
-            else if (currentPriority == bestPriority && currentDistanceSqr < bestDistanceSqr)
-            {
-                shouldSelect = true;
-            }
-
-            if (shouldSelect)
-            {
-                bestWorld = world;
-                bestPriority = currentPriority;
-                bestDistanceSqr = currentDistanceSqr;
-            }
-        }
-
-        return bestWorld;
     }
 
     private void OnValidate()

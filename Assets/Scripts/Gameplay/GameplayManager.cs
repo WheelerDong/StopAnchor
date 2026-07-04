@@ -6,5 +6,12 @@ using UnityEngine;
 
 public class GameplayManager : SingletonMono<GameplayManager>
 {
+    private int currentAnchorCount = 0;
+    public void Init(int anchorCount)
+    {
+        currentAnchorCount = anchorCount;
+        GameplayUIManager.Instance.UpdateAnchorUI(currentAnchorCount);
+    }
+    
     
 }

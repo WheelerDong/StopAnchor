@@ -8,6 +8,7 @@ public class GameUIManager : SingletonMono<GameUIManager>
 {
     [FormerlySerializedAs("MainPage")] [SerializeField] private GameObject mainPage;
     [SerializeField] private GameObject levelsPage;
+    
 
 
     public void ShowMainPage()
@@ -21,4 +22,6 @@ public class GameUIManager : SingletonMono<GameUIManager>
         levelsPage.SetActive(true);
         mainPage.SetActive(false);
     }
+
+   
 }

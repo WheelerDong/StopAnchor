@@ -881,7 +881,7 @@ MonoBehaviour:
   rotationCenter: {fileID: 4061867182517271971}
   returnDelay: 3
   returnSpeed: 180
-  isNormalObstacle: 1
+  isNormalObstacle: 0
   unlockAfterReturn: 1
 --- !u!61 &2221223800502328552
 BoxCollider2D:
@@ -1008,6 +1008,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f9e462cb9cb2a348bc68705e4b88632, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  anchorCount: 5
+  player: {fileID: 0}
+  autoInitOnStart: 1
+  keepCurrentWorldWhenPlayerOutsideAllWorlds: 1
 --- !u!1 &4270615197209876346
 GameObject:
   m_ObjectHideFlags: 0
