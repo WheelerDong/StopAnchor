@@ -16,6 +16,8 @@ public class ObstacleMono : MonoBehaviour
     [Header("Options")]
     [Tooltip("true：普通障碍物，只跟随 World 旋转；false：点击后会锁定并回弹")]
     [SerializeField] private bool isNormalObstacle = false;
+    [Tooltip("true：陷阱障碍，玩家踩到后会触发陷阱逻辑")]
+    [SerializeField] private bool isTrapObstacle = false;
 
     [SerializeField] private bool unlockAfterReturn = true;
 
@@ -379,5 +381,43 @@ public class ObstacleMono : MonoBehaviour
     {
         returnDelay = Mathf.Max(0f, returnDelay);
         returnSpeed = Mathf.Max(0f, returnSpeed);
+    }
+    
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        TryTriggerTrap(collision.collider);
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        TryTriggerTrap(other);
+    }
+
+    private void TryTriggerTrap(Collider2D other)
+    {
+        if (!isTrapObstacle)
+        {
+            return;
+        }
+
+        if (IsPaused)
+        {
+            return;
+        }
+
+        PlayerMono player = other.GetComponentInParent<PlayerMono>();
+
+        if (player == null)
+        {
+            return;
+        }
+
+        TriggerTrap(player);
+    }
+
+    private void TriggerTrap(PlayerMono player)
+    {
+        // 例如：玩家死亡、重开关卡、播放特效等
+        GameplayManager.Instance.RestartLevel();
     }
 }
