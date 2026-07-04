@@ -52,7 +52,22 @@ public class GameplayManager : SingletonMono<GameplayManager>
 
     public void NextLevel()
     {
-        
+        isPaused = false;
+
+        if (GameplayUIManager.Instance != null)
+        {
+            GameplayUIManager.Instance.HideSettingUI();
+        }
+
+        if (GameFlowManager.Instance == null)
+        {
+            Debug.LogError("[GameplayManager] 找不到 GameFlowManager，无法进入下一关。");
+            return;
+        }
+
+        GameFlowManager.Instance.PlayNextLevel();
+
+        levelMono = null;
     }
     
     public void RestartLevel()

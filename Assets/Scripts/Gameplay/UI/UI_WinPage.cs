@@ -15,6 +15,6 @@ public class UI_WinPage : MonoBehaviour
 
     private void OnNextLevelButtonClick()
     {
-        
+        GameplayManager.Instance.NextLevel();
     }
 }

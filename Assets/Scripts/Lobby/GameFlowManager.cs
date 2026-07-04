@@ -25,6 +25,25 @@ public class GameFlowManager : SingletonMono<GameFlowManager>
     {
         PlayLevel(currentLevel);
     }
+    
+    public void PlayNextLevel()
+    {
+        if (isLoadingLevel)
+        {
+            return;
+        }
+
+        int nextLevelIndex = currentLevel + 1;
+
+        if (!IsValidLevelIndex(nextLevelIndex))
+        {
+            Debug.Log("[GameFlowManager] 已经是最后一关，返回大厅。");
+            GoIntoLobby();
+            return;
+        }
+
+        PlayLevel(nextLevelIndex);
+    }
 
     public void PlayLevel(int levelIndex)
     {
