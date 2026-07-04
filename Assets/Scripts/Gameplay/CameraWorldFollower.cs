@@ -49,6 +49,7 @@ public class CameraWorldFollower : MonoBehaviour
 
         if (level != null && !level.IsInitialized)
         {
+            Debug.Log("CameraWorldFollower is initializing level");
             level.Init();
         }
     }

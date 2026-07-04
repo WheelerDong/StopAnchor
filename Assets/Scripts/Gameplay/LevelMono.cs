@@ -5,8 +5,11 @@ using UnityEngine;
 public class LevelMono : MonoBehaviour
 {
     [SerializeField] private int anchorCount;
-    [Header("References")]
-    [SerializeField] private Transform player;
+
+    [Header("Player Spawn")]
+    [SerializeField] private PlayerMono playerPrefab;
+    [SerializeField] private Transform playerSpawnPoint;
+    [SerializeField] private Transform playerParent;
 
     [Header("Options")]
     [SerializeField] private bool autoInitOnStart = true;
@@ -16,27 +19,40 @@ public class LevelMono : MonoBehaviour
 
     private readonly List<WorldMono> worlds = new List<WorldMono>();
 
+    private PlayerMono playerInstance;
+
     public WorldMono CurrentActiveWorld { get; private set; }
 
     public bool IsInitialized { get; private set; }
 
+    public PlayerMono PlayerInstance => playerInstance;
+
+    public Transform PlayerTransform =>
+        playerInstance != null ? playerInstance.transform : null;
+
     public void Init()
     {
-        ResolvePlayer();
-        CacheChildWorlds();
-        GameplayManager.Instance.Init(anchorCount);
+        if (IsInitialized)
+        {
+            return;
+        }
 
+        //Debug.Log("levelMono.Init");
         IsInitialized = true;
+        SpawnPlayerIfNeeded();
+        CacheChildWorlds();
+
+        GameplayManager.Instance.Init(anchorCount);
 
         RefreshCurrentActiveWorld(true);
     }
 
     private void Start()
     {
-        if (autoInitOnStart && !IsInitialized)
-        {
-            Init();
-        }
+        // if (autoInitOnStart && !IsInitialized)
+        // {
+        //     Init();
+        // }
     }
 
     private void Update()
@@ -49,10 +65,45 @@ public class LevelMono : MonoBehaviour
         RefreshCurrentActiveWorld(false);
     }
 
+    private void SpawnPlayerIfNeeded()
+    {
+        if (playerInstance != null)
+        {
+            return;
+        }
+
+        if (playerPrefab == null)
+        {
+            Debug.LogError($"{nameof(LevelMono)} 缺少 Player Prefab。", this);
+            return;
+        }
+
+        Vector3 spawnPosition = transform.position;
+        Quaternion spawnRotation = Quaternion.identity;
+
+        if (playerSpawnPoint != null)
+        {
+            spawnPosition = playerSpawnPoint.position;
+            spawnRotation = playerSpawnPoint.rotation;
+        }
+        else
+        {
+            Debug.LogWarning($"{nameof(LevelMono)} 没有配置 Player Spawn Point，将使用 LevelMono 自身位置生成玩家。", this);
+        }
+
+        Transform parent = playerParent != null ? playerParent : null;
+
+        Debug.Log("玩家生成");
+        playerInstance = Instantiate(
+            playerPrefab,
+            spawnPosition,
+            spawnRotation,
+            parent
+        );
+    }
+
     public void RefreshCurrentActiveWorld(bool forceRefresh = false)
     {
-        ResolvePlayer();
-
         WorldMono targetWorld = FindWorldByPlayerPosition();
 
         if (targetWorld == null)
@@ -101,7 +152,9 @@ public class LevelMono : MonoBehaviour
 
     private WorldMono FindWorldByPlayerPosition()
     {
-        if (player == null)
+        Transform playerTransform = PlayerTransform;
+
+        if (playerTransform == null)
         {
             return null;
         }
@@ -111,7 +164,7 @@ public class LevelMono : MonoBehaviour
         int bestPriority = int.MinValue;
         float bestDistanceSqr = float.MaxValue;
 
-        Vector2 playerPosition = player.position;
+        Vector2 playerPosition = playerTransform.position;
 
         for (int i = worlds.Count - 1; i >= 0; i--)
         {
@@ -166,7 +219,10 @@ public class LevelMono : MonoBehaviour
         int bestPriority = int.MinValue;
         float bestDistanceSqr = float.MaxValue;
 
-        Vector2 playerPosition = player != null ? (Vector2)player.position : Vector2.zero;
+        Transform playerTransform = PlayerTransform;
+        Vector2 playerPosition = playerTransform != null
+            ? (Vector2)playerTransform.position
+            : Vector2.zero;
 
         for (int i = worlds.Count - 1; i >= 0; i--)
         {
@@ -184,6 +240,7 @@ public class LevelMono : MonoBehaviour
             }
 
             int currentPriority = world.Priority;
+
             float currentDistanceSqr =
                 ((Vector2)world.WorldCenter.position - playerPosition).sqrMagnitude;
 
@@ -231,21 +288,6 @@ public class LevelMono : MonoBehaviour
             worlds.Add(world);
             world.RefreshChildObstacles();
             world.SetWorldActive(false);
-        }
-    }
-
-    private void ResolvePlayer()
-    {
-        if (player != null)
-        {
-            return;
-        }
-
-        PlayerMono playerMono = FindObjectOfType<PlayerMono>();
-
-        if (playerMono != null)
-        {
-            player = playerMono.transform;
         }
     }
 }

@@ -76,8 +76,9 @@ public class GameFlowManager : SingletonMono<GameFlowManager>
             yield return null;
         }
 
-        Instantiate(levelPrefab, Vector3.zero, Quaternion.identity);
-        levelPrefab.Init();
+        LevelMono levelInstance = Instantiate(levelPrefab, Vector3.zero, Quaternion.identity);
+        Debug.Log("GameFlowManager is initializing level");
+        levelInstance.Init();
 
         isLoadingLevel = false;
     }
