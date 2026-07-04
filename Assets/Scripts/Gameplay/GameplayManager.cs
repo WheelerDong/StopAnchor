@@ -12,6 +12,19 @@ public class GameplayManager : SingletonMono<GameplayManager>
         currentAnchorCount = anchorCount;
         GameplayUIManager.Instance.UpdateAnchorUI(currentAnchorCount);
     }
-    
-    
+
+    public bool TryUseAnchor()
+    {
+        if (currentAnchorCount <= 0)
+            return false;
+        currentAnchorCount--;
+        GameplayUIManager.Instance.UpdateAnchorUI(currentAnchorCount);
+        return true;
+    }
+
+    public void GiveAnchorBack()
+    {
+        currentAnchorCount++;
+        GameplayUIManager.Instance.UpdateAnchorUI(currentAnchorCount);
+    }
 }

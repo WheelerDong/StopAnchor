@@ -49,6 +49,21 @@ public class UI_AnchorManager : MonoBehaviour
         if (!hasInit)
         {
             Init(currentAnchorCount);
+            return;
         }
+
+        for (int i = 0; i < anchors.Count; i++)
+        {
+            UI_Anchor anchor = anchors[i];
+            if (i < currentAnchorCount)
+            {
+                anchor.SetActive(true);
+            }
+            else
+            {
+                anchor.SetActive(false);
+            }
+        }
+        
     }
 }

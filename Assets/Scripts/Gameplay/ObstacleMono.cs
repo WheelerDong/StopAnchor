@@ -89,7 +89,12 @@ public class ObstacleMono : MonoBehaviour
             return;
         }
 
-        LockAndReturn();
+        if (GameplayManager.Instance.TryUseAnchor())
+        {
+            LockAndReturn();
+        }
+        
+        
     }
 
     public void LockAndReturn()
@@ -115,6 +120,7 @@ public class ObstacleMono : MonoBehaviour
     {
         yield return new WaitForSeconds(returnDelay);
 
+        GameplayManager.Instance.GiveAnchorBack();
         if (!CanReceiveWorldControl())
         {
             returnCoroutine = null;
