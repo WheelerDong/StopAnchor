@@ -7,10 +7,16 @@ using UnityEngine;
 public class GameplayManager : SingletonMono<GameplayManager>
 {
     private int currentAnchorCount = 0;
+    private int currentStarCount = 0;
     public void Init(int anchorCount)
     {
         currentAnchorCount = anchorCount;
         GameplayUIManager.Instance.UpdateAnchorUI(currentAnchorCount);
+    }
+
+    public void AddStar()
+    {
+        currentStarCount++;
     }
 
     public bool TryUseAnchor()
