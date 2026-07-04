@@ -8,7 +8,12 @@ public class GameplayUIManager : SingletonMono<GameplayUIManager>
     [SerializeField] private UI_AnchorManager anchorManager;
     [SerializeField] private UI_Setting setting;
     [SerializeField] private UI_WinPage winPage;
-    
+
+    public void Init()
+    {
+        HideSettingUI();
+        HideWinPage();
+    }
     public void UpdateAnchorUI(int currentAnchorCount)
     {
         anchorManager.UpdateUI(currentAnchorCount);

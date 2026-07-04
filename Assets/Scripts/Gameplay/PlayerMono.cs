@@ -26,8 +26,8 @@ public class PlayerMono : MonoBehaviour
     // 玩家相对 stickPoint 的位置偏移
     private Vector3 localPositionOffset;
 
-    // 玩家相对 stickPoint 的旋转偏移，2D 只需要 Z 轴角度
-    private float rotationOffsetZ;
+    // 粘住时玩家自己的世界旋转角度。粘住期间保持这个角度不变。
+    private float fixedStickRotationZ;
 
     // 用于脱离时继承速度
     private Vector3 lastFollowPosition;
@@ -225,7 +225,9 @@ public class PlayerMono : MonoBehaviour
         }
 
         localPositionOffset = stickTrans.InverseTransformPoint(transform.position);
-        rotationOffsetZ = Mathf.DeltaAngle(stickTrans.eulerAngles.z, transform.eulerAngles.z);
+
+        // 暂停恢复后，以当前玩家世界旋转作为继续固定的角度
+        fixedStickRotationZ = transform.eulerAngles.z;
     }
 
     private void FollowStickPointImmediately()
@@ -239,12 +241,16 @@ public class PlayerMono : MonoBehaviour
         }
 
         Vector3 targetPosition = stickTrans.TransformPoint(localPositionOffset);
-        float targetRotationZ = stickTrans.eulerAngles.z + rotationOffsetZ;
+
+        // 重点：粘住后玩家自己的旋转保持不变，不再跟随 stickPoint 旋转
+        float targetRotationZ = fixedStickRotationZ;
 
         // 计算粘住期间的跟随速度，方便脱离时继承
         if (hasLastFollowPose && Time.deltaTime > 0f)
         {
             followVelocity = (targetPosition - lastFollowPosition) / Time.deltaTime;
+
+            // 因为玩家旋转保持不变，所以正常情况下这里会是 0
             followAngularVelocity = Mathf.DeltaAngle(lastFollowRotationZ, targetRotationZ) / Time.deltaTime;
         }
 
@@ -284,8 +290,8 @@ public class PlayerMono : MonoBehaviour
         // 记录玩家相对 stickPoint 的位置偏移
         localPositionOffset = stickTrans.InverseTransformPoint(transform.position);
 
-        // 记录玩家相对 stickPoint 的旋转偏移
-        rotationOffsetZ = Mathf.DeltaAngle(stickTrans.eulerAngles.z, transform.eulerAngles.z);
+        // 记录粘住瞬间玩家自己的世界旋转角度
+        fixedStickRotationZ = transform.eulerAngles.z;
 
         rb.velocity = Vector2.zero;
         rb.angularVelocity = 0f;
@@ -323,6 +329,8 @@ public class PlayerMono : MonoBehaviour
         if (inheritStickPointVelocityOnDetach)
         {
             rb.velocity = followVelocity;
+
+            // 玩家粘住期间自身不旋转，所以这里通常是 0
             rb.angularVelocity = followAngularVelocity;
         }
         else

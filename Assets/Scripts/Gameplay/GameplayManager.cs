@@ -20,6 +20,7 @@ public class GameplayManager : SingletonMono<GameplayManager>
         isPaused = false;
 
         GameplayUIManager.Instance.UpdateAnchorUI(currentAnchorCount);
+        GameplayUIManager.Instance.Init();
     }
     
     private void Update()
@@ -86,6 +87,7 @@ public class GameplayManager : SingletonMono<GameplayManager>
         }
 
         GameFlowManager.Instance.RestartCurrentLevel(levelMono);
+        GameplayUIManager.Instance.Init();
 
         levelMono = null;
     }
