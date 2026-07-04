@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[DefaultExecutionOrder(1000)]
 [RequireComponent(typeof(Collider2D))]
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMono : MonoBehaviour
@@ -35,6 +36,27 @@ public class PlayerMono : MonoBehaviour
     private float followAngularVelocity;
     private bool hasLastFollowPose = false;
 
+    // Pause Freeze
+    private bool isPauseFrozen = false;
+
+    private Vector3 pausePosition;
+    private Quaternion pauseRotation;
+
+    private Vector2 pauseVelocity;
+    private float pauseAngularVelocity;
+
+    private bool pauseRbSimulated;
+    private RigidbodyType2D pauseBodyType;
+    private float pauseGravityScale;
+
+    private bool IsPaused
+    {
+        get
+        {
+            return GameplayManager.Instance != null && GameplayManager.Instance.IsPaused;
+        }
+    }
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -46,6 +68,13 @@ public class PlayerMono : MonoBehaviour
 
     private void Update()
     {
+        HandlePauseFreezeState();
+
+        if (isPauseFrozen)
+        {
+            return;
+        }
+
         if (!isSticking)
         {
             if (currentStickPoint != null && Input.GetKeyDown(stickKey))
@@ -62,14 +91,141 @@ public class PlayerMono : MonoBehaviour
         }
     }
 
+    private void FixedUpdate()
+    {
+        HandlePauseFreezeState();
+
+        if (isPauseFrozen)
+        {
+            KeepPauseFrozenPose();
+        }
+    }
+
     private void LateUpdate()
     {
+        HandlePauseFreezeState();
+
+        if (isPauseFrozen)
+        {
+            KeepPauseFrozenPose();
+            return;
+        }
+
         if (!isSticking || stickingPoint == null)
         {
             return;
         }
 
         FollowStickPointImmediately();
+    }
+
+    private void HandlePauseFreezeState()
+    {
+        if (IsPaused)
+        {
+            if (!isPauseFrozen)
+            {
+                EnterPauseFreeze();
+            }
+
+            KeepPauseFrozenPose();
+        }
+        else
+        {
+            if (isPauseFrozen)
+            {
+                ExitPauseFreeze();
+            }
+        }
+    }
+
+    private void EnterPauseFreeze()
+    {
+        isPauseFrozen = true;
+
+        pausePosition = transform.position;
+        pauseRotation = transform.rotation;
+
+        pauseVelocity = rb.velocity;
+        pauseAngularVelocity = rb.angularVelocity;
+
+        pauseRbSimulated = rb.simulated;
+        pauseBodyType = rb.bodyType;
+        pauseGravityScale = rb.gravityScale;
+
+        rb.velocity = Vector2.zero;
+        rb.angularVelocity = 0f;
+
+        // 暂停期间关闭物理模拟，确保重力、速度、碰撞都不会继续推动玩家
+        rb.simulated = false;
+
+        KeepPauseFrozenPose();
+    }
+
+    private void KeepPauseFrozenPose()
+    {
+        transform.SetPositionAndRotation(pausePosition, pauseRotation);
+
+        rb.position = pausePosition;
+        rb.rotation = pauseRotation.eulerAngles.z;
+
+        rb.velocity = Vector2.zero;
+        rb.angularVelocity = 0f;
+    }
+
+    private void ExitPauseFreeze()
+    {
+        transform.SetPositionAndRotation(pausePosition, pauseRotation);
+
+        rb.position = pausePosition;
+        rb.rotation = pauseRotation.eulerAngles.z;
+
+        if (isSticking)
+        {
+            // 粘住状态恢复后，仍然保持粘住，但不要恢复物理模拟
+            rb.bodyType = originBodyType;
+            rb.gravityScale = originGravityScale;
+            rb.simulated = false;
+
+            rb.velocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+
+            RefreshStickOffsetFromCurrentPose();
+
+            hasLastFollowPose = false;
+            followVelocity = Vector2.zero;
+            followAngularVelocity = 0f;
+        }
+        else
+        {
+            // 非粘住状态，恢复暂停前的物理状态
+            rb.bodyType = pauseBodyType;
+            rb.gravityScale = pauseGravityScale;
+            rb.simulated = pauseRbSimulated;
+
+            rb.velocity = pauseVelocity;
+            rb.angularVelocity = pauseAngularVelocity;
+        }
+
+        isPauseFrozen = false;
+    }
+
+    private void RefreshStickOffsetFromCurrentPose()
+    {
+        if (!isSticking || stickingPoint == null)
+        {
+            return;
+        }
+
+        Transform stickTrans = stickingPoint.StickTransform;
+
+        if (stickTrans == null)
+        {
+            return;
+        }
+
+        localPositionOffset = stickTrans.InverseTransformPoint(transform.position);
+        rotationOffsetZ = Mathf.DeltaAngle(stickTrans.eulerAngles.z, transform.eulerAngles.z);
     }
 
     private void FollowStickPointImmediately()
@@ -134,7 +290,6 @@ public class PlayerMono : MonoBehaviour
         rb.velocity = Vector2.zero;
         rb.angularVelocity = 0f;
 
-        // 关键点：
         // 粘住期间关闭 Rigidbody2D 模拟，避免物理系统和 Transform 跟随互相打架
         rb.simulated = false;
 

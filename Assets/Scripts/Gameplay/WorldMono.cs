@@ -22,6 +22,7 @@ public class WorldMono : MonoBehaviour
     [SerializeField] private bool isActiveWorld = false;
 
     private readonly List<ObstacleMono> obstacles = new List<ObstacleMono>();
+    private readonly List<StarMono> stars = new List<StarMono>();
 
     private Collider2D worldCollider;
     private bool initialized = false;
@@ -84,7 +85,7 @@ public class WorldMono : MonoBehaviour
 
         if (angleChanged)
         {
-            UpdateChildObstacles();
+            UpdateChildRotatables();
         }
     }
 
@@ -103,7 +104,7 @@ public class WorldMono : MonoBehaviour
             worldCenter = transform;
         }
 
-        CacheChildObstacles();
+        CacheChildRotatables();
 
         initialized = true;
     }
@@ -132,13 +133,19 @@ public class WorldMono : MonoBehaviour
         return true;
     }
 
-    private void UpdateChildObstacles()
+    private void UpdateChildRotatables()
     {
         if (!isActiveWorld)
         {
             return;
         }
 
+        UpdateChildObstacles();
+        UpdateChildStars();
+    }
+
+    private void UpdateChildObstacles()
+    {
         for (int i = obstacles.Count - 1; i >= 0; i--)
         {
             ObstacleMono obstacle = obstacles[i];
@@ -153,11 +160,34 @@ public class WorldMono : MonoBehaviour
         }
     }
 
+    private void UpdateChildStars()
+    {
+        for (int i = stars.Count - 1; i >= 0; i--)
+        {
+            StarMono star = stars[i];
+
+            if (star == null)
+            {
+                stars.RemoveAt(i);
+                continue;
+            }
+
+            star.FollowWorldAngle(currentGlobalAngle);
+        }
+    }
+
+    private void CacheChildRotatables()
+    {
+        CacheChildObstacles();
+        CacheChildStars();
+    }
+
     private void CacheChildObstacles()
     {
         obstacles.Clear();
 
-        ObstacleMono[] childObstacles = GetComponentsInChildren<ObstacleMono>(true);
+        ObstacleMono[] childObstacles =
+            GetComponentsInChildren<ObstacleMono>(true);
 
         for (int i = 0; i < childObstacles.Length; i++)
         {
@@ -173,15 +203,60 @@ public class WorldMono : MonoBehaviour
         }
     }
 
+    private void CacheChildStars()
+    {
+        stars.Clear();
+
+        StarMono[] childStars =
+            GetComponentsInChildren<StarMono>(true);
+
+        for (int i = 0; i < childStars.Length; i++)
+        {
+            StarMono star = childStars[i];
+
+            if (star == null)
+            {
+                continue;
+            }
+
+            stars.Add(star);
+            star.BindWorld(this);
+        }
+    }
+
     public void RefreshChildObstacles()
     {
         EnsureInitialized();
 
-        CacheChildObstacles();
+        CacheChildRotatables();
 
         if (isActiveWorld)
         {
-            UpdateChildObstacles();
+            UpdateChildRotatables();
+        }
+    }
+
+    public void RefreshChildStars()
+    {
+        EnsureInitialized();
+
+        CacheChildRotatables();
+
+        if (isActiveWorld)
+        {
+            UpdateChildRotatables();
+        }
+    }
+
+    public void RefreshChildRotatables()
+    {
+        EnsureInitialized();
+
+        CacheChildRotatables();
+
+        if (isActiveWorld)
+        {
+            UpdateChildRotatables();
         }
     }
 
@@ -193,7 +268,7 @@ public class WorldMono : MonoBehaviour
         {
             if (isActiveWorld)
             {
-                UpdateChildObstacles();
+                UpdateChildRotatables();
             }
 
             return;
@@ -214,9 +289,22 @@ public class WorldMono : MonoBehaviour
             obstacle.OnOwnerWorldActiveChanged(active);
         }
 
+        for (int i = stars.Count - 1; i >= 0; i--)
+        {
+            StarMono star = stars[i];
+
+            if (star == null)
+            {
+                stars.RemoveAt(i);
+                continue;
+            }
+
+            star.OnOwnerWorldActiveChanged(active);
+        }
+
         if (isActiveWorld)
         {
-            UpdateChildObstacles();
+            UpdateChildRotatables();
         }
     }
 

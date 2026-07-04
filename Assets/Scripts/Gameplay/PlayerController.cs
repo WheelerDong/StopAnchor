@@ -28,6 +28,14 @@ public class PlayerController : MonoBehaviour
 
     private bool hasBeenAirborne = false;
 
+    private bool IsPaused
+    {
+        get
+        {
+            return GameplayManager.Instance != null && GameplayManager.Instance.IsPaused;
+        }
+    }
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -52,6 +60,13 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        if (IsPaused)
+        {
+            // 防止暂停期间或暂停前一帧的跳跃输入在恢复后触发
+            jumpPressed = false;
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.Space))
         {
             jumpPressed = true;
@@ -60,6 +75,12 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (IsPaused)
+        {
+            jumpPressed = false;
+            return;
+        }
+
         HandleJump();
         HandleJumpRecharge();
     }
@@ -117,8 +138,6 @@ public class PlayerController : MonoBehaviour
         Bounds bounds = bodyCollider.bounds;
 
         Vector2 origin = bounds.center;
-
-        // 从玩家中心向世界坐标正下方检测
         float castDistance = bounds.extents.y + groundCheckExtraDistance;
 
         RaycastHit2D hit = Physics2D.CircleCast(

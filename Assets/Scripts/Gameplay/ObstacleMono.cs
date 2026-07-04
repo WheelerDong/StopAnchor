@@ -32,6 +32,14 @@ public class ObstacleMono : MonoBehaviour
 
     private Coroutine returnCoroutine;
 
+    private bool IsPaused
+    {
+        get
+        {
+            return GameplayManager.Instance != null && GameplayManager.Instance.IsPaused;
+        }
+    }
+
     private void Start()
     {
         InitializeDefaultState();
@@ -64,6 +72,11 @@ public class ObstacleMono : MonoBehaviour
 
     public void FollowWorldAngle(float worldAngle)
     {
+        if (IsPaused)
+        {
+            return;
+        }
+
         if (!CanReceiveWorldControl())
         {
             return;
@@ -79,6 +92,11 @@ public class ObstacleMono : MonoBehaviour
 
     private void OnMouseDown()
     {
+        if (IsPaused)
+        {
+            return;
+        }
+
         if (isNormalObstacle)
         {
             return;
@@ -93,12 +111,15 @@ public class ObstacleMono : MonoBehaviour
         {
             LockAndReturn();
         }
-        
-        
     }
 
     public void LockAndReturn()
     {
+        if (IsPaused)
+        {
+            return;
+        }
+
         if (!CanReceiveWorldControl())
         {
             return;
@@ -118,9 +139,17 @@ public class ObstacleMono : MonoBehaviour
 
     private IEnumerator ReturnToWorldAngle()
     {
-        yield return new WaitForSeconds(returnDelay);
+        // 暂停期间不计入 returnDelay
+        yield return WaitForUnpausedSeconds(returnDelay);
 
-        GameplayManager.Instance.GiveAnchorBack();
+        // 如果 delay 正好结束时处于暂停状态，等恢复后再继续
+        yield return WaitUntilUnpaused();
+
+        if (GameplayManager.Instance != null)
+        {
+            GameplayManager.Instance.GiveAnchorBack();
+        }
+
         if (!CanReceiveWorldControl())
         {
             returnCoroutine = null;
@@ -136,6 +165,12 @@ public class ObstacleMono : MonoBehaviour
         {
             while (CanReceiveWorldControl())
             {
+                if (IsPaused)
+                {
+                    yield return null;
+                    continue;
+                }
+
                 float targetAngle = GetWorldTargetAngle();
 
                 if (Mathf.Abs(currentAngle - targetAngle) <= 0.01f)
@@ -165,6 +200,34 @@ public class ObstacleMono : MonoBehaviour
         if (unlockAfterReturn)
         {
             canRotate = true;
+        }
+    }
+
+    private IEnumerator WaitForUnpausedSeconds(float duration)
+    {
+        if (duration <= 0f)
+        {
+            yield break;
+        }
+
+        float timer = 0f;
+
+        while (timer < duration)
+        {
+            if (!IsPaused)
+            {
+                timer += Time.deltaTime;
+            }
+
+            yield return null;
+        }
+    }
+
+    private IEnumerator WaitUntilUnpaused()
+    {
+        while (IsPaused)
+        {
+            yield return null;
         }
     }
 
@@ -209,6 +272,11 @@ public class ObstacleMono : MonoBehaviour
 
     private void RotateToAngle(float targetAngle)
     {
+        if (IsPaused)
+        {
+            return;
+        }
+
         if (!InitializeDefaultState())
         {
             return;
@@ -242,6 +310,11 @@ public class ObstacleMono : MonoBehaviour
 
     private void SnapToAngle(float angle)
     {
+        if (IsPaused)
+        {
+            return;
+        }
+
         if (!InitializeDefaultState())
         {
             return;
