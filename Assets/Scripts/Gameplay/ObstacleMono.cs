@@ -16,10 +16,15 @@ public class ObstacleMono : MonoBehaviour
     [Header("Options")]
     [Tooltip("true：普通障碍物，只跟随 World 旋转；false：点击后会锁定并回弹")]
     [SerializeField] private bool isNormalObstacle = false;
+
     [Tooltip("true：陷阱障碍，玩家踩到后会触发陷阱逻辑")]
     [SerializeField] private bool isTrapObstacle = false;
 
     [SerializeField] private bool unlockAfterReturn = true;
+
+    [Header("Gear")]
+    [Tooltip("当 isNormalObstacle 为 false 时必须赋值。锁定时 Pin，解除锁定时 Unpin。")]
+    [SerializeField] private GearMono gearMono;
 
     private WorldMono ownerWorld;
 
@@ -44,6 +49,7 @@ public class ObstacleMono : MonoBehaviour
 
     private void Start()
     {
+        ValidateGearRequirement();
         InitializeDefaultState();
     }
 
@@ -56,6 +62,7 @@ public class ObstacleMono : MonoBehaviour
             rotationCenter = ownerWorld.WorldCenter;
         }
 
+        ValidateGearRequirement();
         InitializeDefaultState();
     }
 
@@ -69,7 +76,7 @@ public class ObstacleMono : MonoBehaviour
         StopReturnCoroutineOnly();
 
         // World 失活后，不保留锁死状态，防止之后重新进入时无法继续跟随
-        canRotate = true;
+        UnlockObstacle();
     }
 
     public void FollowWorldAngle(float worldAngle)
@@ -104,6 +111,16 @@ public class ObstacleMono : MonoBehaviour
             return;
         }
 
+        if (!canRotate)
+        {
+            return;
+        }
+
+        if (!ValidateGearRequirement())
+        {
+            return;
+        }
+
         if (!CanReceiveWorldControl())
         {
             return;
@@ -122,6 +139,16 @@ public class ObstacleMono : MonoBehaviour
             return;
         }
 
+        if (!canRotate)
+        {
+            return;
+        }
+
+        if (!ValidateGearRequirement())
+        {
+            return;
+        }
+
         if (!CanReceiveWorldControl())
         {
             return;
@@ -133,6 +160,7 @@ public class ObstacleMono : MonoBehaviour
         }
 
         canRotate = false;
+        PinGear();
 
         StopReturnCoroutineOnly();
 
@@ -155,7 +183,7 @@ public class ObstacleMono : MonoBehaviour
         if (!CanReceiveWorldControl())
         {
             returnCoroutine = null;
-            canRotate = true;
+            UnlockObstacle();
             yield break;
         }
 
@@ -201,7 +229,7 @@ public class ObstacleMono : MonoBehaviour
 
         if (unlockAfterReturn)
         {
-            canRotate = true;
+            UnlockObstacle();
         }
     }
 
@@ -366,6 +394,48 @@ public class ObstacleMono : MonoBehaviour
         return true;
     }
 
+    private bool ValidateGearRequirement()
+    {
+        if (isNormalObstacle)
+        {
+            return true;
+        }
+
+        if (gearMono != null)
+        {
+            return true;
+        }
+
+        Debug.LogError($"{name} 的 isNormalObstacle 为 false，必须设置 GearMono 参数", this);
+        return false;
+    }
+
+    private void PinGear()
+    {
+        if (gearMono == null)
+        {
+            return;
+        }
+
+        gearMono.Pin();
+    }
+
+    private void UnpinGear()
+    {
+        if (gearMono == null)
+        {
+            return;
+        }
+
+        gearMono.Unpin();
+    }
+
+    private void UnlockObstacle()
+    {
+        canRotate = true;
+        UnpinGear();
+    }
+
     private void StopReturnCoroutineOnly()
     {
         if (returnCoroutine == null)
@@ -381,8 +451,13 @@ public class ObstacleMono : MonoBehaviour
     {
         returnDelay = Mathf.Max(0f, returnDelay);
         returnSpeed = Mathf.Max(0f, returnSpeed);
+
+        if (!isNormalObstacle && gearMono == null)
+        {
+            Debug.LogError($"{name} 的 isNormalObstacle 为 false，必须设置 GearMono 参数", this);
+        }
     }
-    
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
         TryTriggerTrap(collision.collider);
