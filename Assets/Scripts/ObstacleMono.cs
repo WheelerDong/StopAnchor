@@ -4,20 +4,22 @@ using UnityEngine;
 public class ObstacleMono : MonoBehaviour
 {
     [Header("Rotation Target")]
-    [SerializeField] private Transform rotateTarget;       // 真正要被旋转的对象，手动拖拽指定
+    [SerializeField] private Transform rotateTarget;
 
     [Header("Rotation Center")]
     [SerializeField] private Transform rotationCenter;
 
     [Header("Return Settings")]
-    [SerializeField] private float returnDelay = 3f;       // 点击后多久开始回弹
-    [SerializeField] private float returnSpeed = 180f;     // 回弹速度，单位：度/秒
+    [SerializeField] private float returnDelay = 3f;
+    [SerializeField] private float returnSpeed = 180f;
 
     [Header("Options")]
-    private bool unlockAfterReturn = true;
-    
-    [SerializeField]
-    private bool isNormalObstacle = false;
+    [Tooltip("true：普通障碍物，只跟随 World 旋转；false：点击后会锁定并回弹")]
+    [SerializeField] private bool isNormalObstacle = false;
+
+    [SerializeField] private bool unlockAfterReturn = true;
+
+    private WorldMono ownerWorld;
 
     private Vector3 defaultOffsetFromCenter;
     private Quaternion defaultRotation;
@@ -35,32 +37,68 @@ public class ObstacleMono : MonoBehaviour
         InitializeDefaultState();
     }
 
-    private void Update()
+    public void BindWorld(WorldMono world)
     {
+        ownerWorld = world;
+
+        if (rotationCenter == null && ownerWorld != null)
+        {
+            rotationCenter = ownerWorld.WorldCenter;
+        }
+
+        InitializeDefaultState();
+    }
+
+    public void OnOwnerWorldActiveChanged(bool active)
+    {
+        if (active)
+        {
+            return;
+        }
+
+        StopReturnCoroutineOnly();
+
+        // World 失活后，不保留锁死状态，防止之后重新进入时无法继续跟随
+        canRotate = true;
+    }
+
+    public void FollowWorldAngle(float worldAngle)
+    {
+        if (!CanReceiveWorldControl())
+        {
+            return;
+        }
+
         if (!canRotate)
         {
             return;
         }
 
-        HandleRotateInput();
-    }
-
-    private void HandleRotateInput()
-    {
-        RotateToAngle(GetGameplayTargetAngle());
+        RotateToAngle(worldAngle);
     }
 
     private void OnMouseDown()
     {
-        if (!isNormalObstacle)
+        if (isNormalObstacle)
         {
-            LockAndReturn();
+            return;
         }
-        
+
+        if (!CanReceiveWorldControl())
+        {
+            return;
+        }
+
+        LockAndReturn();
     }
 
     public void LockAndReturn()
     {
+        if (!CanReceiveWorldControl())
+        {
+            return;
+        }
+
         if (!InitializeDefaultState())
         {
             return;
@@ -68,29 +106,31 @@ public class ObstacleMono : MonoBehaviour
 
         canRotate = false;
 
-        if (returnCoroutine != null)
-        {
-            StopCoroutine(returnCoroutine);
-        }
+        StopReturnCoroutineOnly();
 
-        returnCoroutine = StartCoroutine(ReturnToGameplayAngle());
+        returnCoroutine = StartCoroutine(ReturnToWorldAngle());
     }
 
-    private IEnumerator ReturnToGameplayAngle()
+    private IEnumerator ReturnToWorldAngle()
     {
         yield return new WaitForSeconds(returnDelay);
 
+        if (!CanReceiveWorldControl())
+        {
+            returnCoroutine = null;
+            canRotate = true;
+            yield break;
+        }
+
         if (returnSpeed <= 0f)
         {
-            SnapToAngle(GetGameplayTargetAngle());
+            SnapToAngle(GetWorldTargetAngle());
         }
         else
         {
-            while (true)
+            while (CanReceiveWorldControl())
             {
-                // 每一帧重新读取 GameplayManager 的角度
-                // 如果 GameplayManager 的值变化，rotateTarget 会实时追踪新的目标
-                float targetAngle = GetGameplayTargetAngle();
+                float targetAngle = GetWorldTargetAngle();
 
                 if (Mathf.Abs(currentAngle - targetAngle) <= 0.01f)
                 {
@@ -108,8 +148,10 @@ public class ObstacleMono : MonoBehaviour
                 yield return null;
             }
 
-            // 最后强制对齐到 GameplayManager 的最新角度
-            SnapToAngle(GetGameplayTargetAngle());
+            if (CanReceiveWorldControl())
+            {
+                SnapToAngle(GetWorldTargetAngle());
+            }
         }
 
         returnCoroutine = null;
@@ -120,14 +162,43 @@ public class ObstacleMono : MonoBehaviour
         }
     }
 
-    private float GetGameplayTargetAngle()
+    private bool CanReceiveWorldControl()
     {
-        if (GameplayManager.Instance == null)
+        EnsureOwnerWorld();
+
+        if (ownerWorld == null)
+        {
+            return false;
+        }
+
+        return ownerWorld.IsActiveWorld;
+    }
+
+    private void EnsureOwnerWorld()
+    {
+        if (ownerWorld != null)
+        {
+            return;
+        }
+
+        WorldMono world = GetComponentInParent<WorldMono>();
+
+        if (world != null)
+        {
+            BindWorld(world);
+        }
+    }
+
+    private float GetWorldTargetAngle()
+    {
+        EnsureOwnerWorld();
+
+        if (ownerWorld == null)
         {
             return currentAngle;
         }
 
-        return GameplayManager.Instance.GetCurrentGlobelAngle();
+        return ownerWorld.GetCurrentGlobalAngle();
     }
 
     private void RotateToAngle(float targetAngle)
@@ -165,7 +236,7 @@ public class ObstacleMono : MonoBehaviour
 
     private void SnapToAngle(float angle)
     {
-        if (rotateTarget == null || rotationCenter == null)
+        if (!InitializeDefaultState())
         {
             return;
         }
@@ -193,13 +264,13 @@ public class ObstacleMono : MonoBehaviour
 
         if (rotateTarget == null)
         {
-            Debug.LogWarning($"{name} 没有设置 rotateTarget");
+            Debug.LogWarning($"{name} 没有设置 rotateTarget", this);
             return false;
         }
 
         if (rotationCenter == null)
         {
-            Debug.LogWarning($"{name} 没有设置 rotationCenter");
+            Debug.LogWarning($"{name} 没有设置 rotationCenter", this);
             return false;
         }
 
@@ -212,6 +283,17 @@ public class ObstacleMono : MonoBehaviour
         initialized = true;
 
         return true;
+    }
+
+    private void StopReturnCoroutineOnly()
+    {
+        if (returnCoroutine == null)
+        {
+            return;
+        }
+
+        StopCoroutine(returnCoroutine);
+        returnCoroutine = null;
     }
 
     private void OnValidate()

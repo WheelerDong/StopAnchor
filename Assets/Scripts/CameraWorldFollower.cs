@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[DefaultExecutionOrder(-100)]
 public class CameraWorldFollower : MonoBehaviour
 {
     [Header("Target")]
@@ -37,9 +38,13 @@ public class CameraWorldFollower : MonoBehaviour
         }
     }
 
-    private void LateUpdate()
+    private void Update()
     {
         RefreshCurrentWorld();
+    }
+
+    private void LateUpdate()
+    {
         MoveCameraToCurrentWorld();
     }
 
@@ -47,15 +52,16 @@ public class CameraWorldFollower : MonoBehaviour
     {
         if (player == null)
         {
+            WorldMono.SetCurrentActiveWorld(null);
+            currentWorld = null;
             return;
         }
 
         WorldMono world = WorldMono.FindWorldByPosition(player.position);
 
-        if (world != null)
-        {
-            currentWorld = world;
-        }
+        WorldMono.SetCurrentActiveWorld(world);
+
+        currentWorld = WorldMono.CurrentActiveWorld;
     }
 
     private void MoveCameraToCurrentWorld()
@@ -86,7 +92,10 @@ public class CameraWorldFollower : MonoBehaviour
             return;
         }
 
-        float distance = Vector2.Distance(currentPosition, targetPosition);
+        float distance = Vector2.Distance(
+            new Vector2(currentPosition.x, currentPosition.y),
+            new Vector2(targetPosition.x, targetPosition.y)
+        );
 
         if (distance <= arriveDistance)
         {
