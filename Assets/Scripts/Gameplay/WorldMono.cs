@@ -23,6 +23,7 @@ public class WorldMono : MonoBehaviour
 
     private readonly List<ObstacleMono> obstacles = new List<ObstacleMono>();
     private readonly List<StarMono> stars = new List<StarMono>();
+    private readonly List<LevelBackgroundMono> levelBackgrounds = new List<LevelBackgroundMono>();
 
     private Collider2D worldCollider;
     private bool initialized = false;
@@ -142,6 +143,7 @@ public class WorldMono : MonoBehaviour
 
         UpdateChildObstacles();
         UpdateChildStars();
+        UpdateChildLevelBackgrounds();
     }
 
     private void UpdateChildObstacles()
@@ -176,10 +178,27 @@ public class WorldMono : MonoBehaviour
         }
     }
 
+    private void UpdateChildLevelBackgrounds()
+    {
+        for (int i = levelBackgrounds.Count - 1; i >= 0; i--)
+        {
+            LevelBackgroundMono levelBackground = levelBackgrounds[i];
+
+            if (levelBackground == null)
+            {
+                levelBackgrounds.RemoveAt(i);
+                continue;
+            }
+
+            levelBackground.FollowWorldAngle(currentGlobalAngle);
+        }
+    }
+
     private void CacheChildRotatables()
     {
         CacheChildObstacles();
         CacheChildStars();
+        CacheChildLevelBackgrounds();
     }
 
     private void CacheChildObstacles()
@@ -224,6 +243,27 @@ public class WorldMono : MonoBehaviour
         }
     }
 
+    private void CacheChildLevelBackgrounds()
+    {
+        levelBackgrounds.Clear();
+
+        LevelBackgroundMono[] childLevelBackgrounds =
+            GetComponentsInChildren<LevelBackgroundMono>(true);
+
+        for (int i = 0; i < childLevelBackgrounds.Length; i++)
+        {
+            LevelBackgroundMono levelBackground = childLevelBackgrounds[i];
+
+            if (levelBackground == null)
+            {
+                continue;
+            }
+
+            levelBackgrounds.Add(levelBackground);
+            levelBackground.BindWorld(this);
+        }
+    }
+
     public void RefreshChildObstacles()
     {
         EnsureInitialized();
@@ -237,6 +277,18 @@ public class WorldMono : MonoBehaviour
     }
 
     public void RefreshChildStars()
+    {
+        EnsureInitialized();
+
+        CacheChildRotatables();
+
+        if (isActiveWorld)
+        {
+            UpdateChildRotatables();
+        }
+    }
+
+    public void RefreshChildLevelBackgrounds()
     {
         EnsureInitialized();
 
@@ -300,6 +352,19 @@ public class WorldMono : MonoBehaviour
             }
 
             star.OnOwnerWorldActiveChanged(active);
+        }
+
+        for (int i = levelBackgrounds.Count - 1; i >= 0; i--)
+        {
+            LevelBackgroundMono levelBackground = levelBackgrounds[i];
+
+            if (levelBackground == null)
+            {
+                levelBackgrounds.RemoveAt(i);
+                continue;
+            }
+
+            levelBackground.OnOwnerWorldActiveChanged(active);
         }
 
         if (isActiveWorld)
