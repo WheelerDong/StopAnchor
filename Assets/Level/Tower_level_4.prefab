@@ -1222,7 +1222,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   anchorCount: 1
-  timeLimit: 120
+  timeLimit: 180
   failCollider2D: {fileID: 886187503973124920}
   playerPrefab: {fileID: 6880741371382533007, guid: aea5552e745b707459c64af40a0123bd,
     type: 3}
