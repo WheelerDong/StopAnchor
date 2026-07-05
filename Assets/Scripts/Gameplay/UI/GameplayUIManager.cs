@@ -46,9 +46,10 @@ public class GameplayUIManager : SingletonMono<GameplayUIManager>
     }
 
 
-    public void ShowWinPage()
+    public void ShowWinPage(int starCount)
     {
-        winPage.gameObject.SetActive(true);
+        //winPage.gameObject.SetActive(true);
+        winPage.Show(starCount);
     }
     public void HideWinPage()
     {

@@ -183,7 +183,7 @@ public class GameplayManager : SingletonMono<GameplayManager>
             GameFlowManager.Instance.CompleteCurrentLevel(currentStarCount);
         }
 
-        GameplayUIManager.Instance.ShowWinPage();
+        GameplayUIManager.Instance.ShowWinPage(currentStarCount);
         Pause();
     }
 

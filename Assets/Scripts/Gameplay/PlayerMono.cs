@@ -7,17 +7,19 @@ public class PlayerMono : MonoBehaviour
 {
     [Header("Stick Settings")]
     [SerializeField] private KeyCode stickKey = KeyCode.S;
-    [SerializeField] private KeyCode detachKey = KeyCode.Space;
 
     [Header("Detach Settings")]
     [SerializeField] private bool inheritStickPointVelocityOnDetach = false;
 
     private Rigidbody2D rb;
+    private PlayerController playerController;
 
     private stickPoint currentStickPoint;
     private stickPoint stickingPoint;
 
     private bool isSticking = false;
+
+    public bool IsSticking => isSticking;
 
     private RigidbodyType2D originBodyType;
     private float originGravityScale;
@@ -61,6 +63,9 @@ public class PlayerMono : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
 
+        // PlayerMono 和 PlayerController 在同一个 GameObject 上
+        playerController = GetComponent<PlayerController>();
+
         originBodyType = rb.bodyType;
         originGravityScale = rb.gravityScale;
         originSimulated = rb.simulated;
@@ -75,19 +80,9 @@ public class PlayerMono : MonoBehaviour
             return;
         }
 
-        if (!isSticking)
+        if (Input.GetKeyDown(stickKey))
         {
-            if (currentStickPoint != null && Input.GetKeyDown(stickKey))
-            {
-                StickToPoint(currentStickPoint);
-            }
-        }
-        else
-        {
-            if (Input.GetKeyDown(detachKey))
-            {
-                DetachFromPoint();
-            }
+            ToggleStickState();
         }
     }
 
@@ -117,6 +112,20 @@ public class PlayerMono : MonoBehaviour
         }
 
         FollowStickPointImmediately();
+    }
+
+    private void ToggleStickState()
+    {
+        if (isSticking)
+        {
+            DetachFromPoint();
+            return;
+        }
+
+        if (currentStickPoint != null)
+        {
+            StickToPoint(currentStickPoint);
+        }
     }
 
     private void HandlePauseFreezeState()
@@ -242,7 +251,7 @@ public class PlayerMono : MonoBehaviour
 
         Vector3 targetPosition = stickTrans.TransformPoint(localPositionOffset);
 
-        // 重点：粘住后玩家自己的旋转保持不变，不再跟随 stickPoint 旋转
+        // 粘住后玩家自己的旋转保持不变，不再跟随 stickPoint 旋转
         float targetRotationZ = fixedStickRotationZ;
 
         // 计算粘住期间的跟随速度，方便脱离时继承
@@ -315,6 +324,8 @@ public class PlayerMono : MonoBehaviour
         }
 
         isSticking = false;
+
+        stickPoint detachedPoint = stickingPoint;
         stickingPoint = null;
 
         // 恢复物理模拟
@@ -341,8 +352,16 @@ public class PlayerMono : MonoBehaviour
 
         hasLastFollowPose = false;
 
-        // 脱离后重新等待触发检测
-        currentStickPoint = null;
+        // 注意：
+        // 不要强制 currentStickPoint = null。
+        // 因为玩家解除吸附时，可能仍然在 stickPoint 的 Trigger 范围内。
+        // 如果这里清空，玩家必须离开再进入 Trigger 才能重新吸附。
+        //
+        // 但是如果脱离的是当前范围内的点，就保留它，允许再次按 S 吸附。
+        if (currentStickPoint == null && detachedPoint != null)
+        {
+            currentStickPoint = detachedPoint;
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other)

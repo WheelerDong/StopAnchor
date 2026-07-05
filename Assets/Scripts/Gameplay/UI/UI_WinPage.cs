@@ -6,6 +6,10 @@ using UnityEngine.UI;
 
 public class UI_WinPage : MonoBehaviour
 {
+    [SerializeField] private GameObject star1;
+    [SerializeField] private GameObject star2;
+    [SerializeField] private GameObject star3;
+    
     [Header("Buttons")]
     [SerializeField] private Button nextLevelButton;
     [SerializeField] private Button returnToMainMenuButton;
@@ -51,6 +55,29 @@ public class UI_WinPage : MonoBehaviour
             c => mainMenuScaleCoroutine = c,
             mainMenuDefaultScale
         );
+    }
+
+    public void Show(int starCount)
+    {
+        gameObject.SetActive(true);
+        switch (starCount)
+        {
+            case 1:
+                star1.SetActive(true);
+                star2.SetActive(false);
+                star3.SetActive(false);
+                break;
+            case 2:
+                star1.SetActive(false);
+                star2.SetActive(true);
+                star3.SetActive(false);
+                break;
+            case 3:
+                star1.SetActive(false);
+                star2.SetActive(false);
+                star3.SetActive(true);
+                break;
+        }
     }
 
     private void OnEnable()

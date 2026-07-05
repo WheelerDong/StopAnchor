@@ -19,6 +19,7 @@ public class PlayerController : MonoBehaviour
 
     private Rigidbody2D rb;
     private Collider2D bodyCollider;
+    private PlayerMono playerMono;
 
     private int maxJumpCount = 1;
     private int currentJumpCount = 0;
@@ -39,10 +40,21 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private bool IsSticking
+    {
+        get
+        {
+            return playerMono != null && playerMono.IsSticking;
+        }
+    }
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         bodyCollider = GetComponent<Collider2D>();
+
+        // PlayerController 和 PlayerMono 在同一个 GameObject 上
+        playerMono = GetComponent<PlayerMono>();
     }
 
     private void Start()
@@ -70,6 +82,10 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        // 注意：
+        // 这里不要判断 IsSticking。
+        // 只记录玩家是否按下了跳跃键。
+        // 真正能不能跳，在 HandleJump() 里判断。
         if (Input.GetKeyDown(KeyCode.Space))
         {
             jumpPressed = true;
@@ -84,6 +100,9 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        // 注意：
+        // 这里也不要因为 IsSticking 直接 return。
+        // 只在真正执行跳跃时判断是否吸附。
         HandleJump();
         HandleJumpRecharge();
     }
@@ -94,6 +113,10 @@ public class PlayerController : MonoBehaviour
             return;
 
         jumpPressed = false;
+
+        // 只在玩家真的尝试跳跃时，检测是否正在吸附
+        if (IsSticking)
+            return;
 
         if (currentJumpCount <= 0)
             return;
