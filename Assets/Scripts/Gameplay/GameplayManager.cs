@@ -146,6 +146,7 @@ public class GameplayManager : SingletonMono<GameplayManager>
         // 这里先暂停游戏。
         // 如果你之后有失败界面，可以在这里调用：
         // GameplayUIManager.Instance.ShowLosePage();
+        GameplayUIManager.Instance.ShowFailedPage();
 
         Pause();
     }
@@ -201,7 +202,7 @@ public class GameplayManager : SingletonMono<GameplayManager>
 
         if (GameplayUIManager.Instance != null)
         {
-            GameplayUIManager.Instance.HideSettingUI();
+            GameplayUIManager.Instance.Init();
         }
 
         if (GameFlowManager.Instance == null)
