@@ -197,6 +197,7 @@ GameObject:
   - component: {fileID: 8928678608896411832}
   - component: {fileID: 18985877364610137}
   - component: {fileID: 2221223800502328552}
+  - component: {fileID: 5904806212961546715}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -243,7 +244,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 804c608b4e6293b42a7be4982a03ede4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rotateTarget: {fileID: 7751371205017028192}
   rotationCenter: {fileID: 4061867182517271971}
   returnDelay: 3
   returnSpeed: 180
@@ -296,6 +296,33 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 0.2733872, y: 11.8933525}
   m_EdgeRadius: 0
+--- !u!50 &5904806212961546715
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3478729976448779433}
+  m_BodyType: 1
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 1
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 0
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 1
+  m_SleepingMode: 1
+  m_CollisionDetection: 1
+  m_Constraints: 0
 --- !u!1 &3678750720743278010
 GameObject:
   m_ObjectHideFlags: 0
@@ -346,8 +373,7 @@ MonoBehaviour:
   anchorCount: 2
   timeLimit: 20
   failCollider2D: {fileID: 6760581489956728957}
-  playerPrefab: {fileID: 6880741371382533007, guid: aea5552e745b707459c64af40a0123bd,
-    type: 3}
+  playerPrefab: {fileID: 0}
   playerSpawnPoint: {fileID: 3277979628196240043}
   playerParent: {fileID: 0}
   autoInitOnStart: 1
@@ -629,7 +655,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 804c608b4e6293b42a7be4982a03ede4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rotateTarget: {fileID: 1135247852431273230}
   rotationCenter: {fileID: 4061867182517271971}
   returnDelay: 3
   returnSpeed: 180
@@ -692,12 +717,12 @@ Rigidbody2D:
   m_GameObject: {fileID: 8169591530544241892}
   m_BodyType: 1
   m_Simulated: 1
-  m_UseFullKinematicContacts: 0
+  m_UseFullKinematicContacts: 1
   m_UseAutoMass: 0
   m_Mass: 1
   m_LinearDrag: 0
   m_AngularDrag: 0.05
-  m_GravityScale: 1
+  m_GravityScale: 0
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -705,7 +730,7 @@ Rigidbody2D:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 0
