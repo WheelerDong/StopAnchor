@@ -12,6 +12,7 @@ public class GameFlowManager : SingletonMono<GameFlowManager>
     [SerializeField] private string gameplaySceneName = "Gameplay";
     [SerializeField] private string lobbySceneName = "Lobby";
 
+    public LevelLibrary LevelLibrary => levelLibrary;
     protected override bool IsPersistent { get; } = true;
 
     private int currentLevel = 0;

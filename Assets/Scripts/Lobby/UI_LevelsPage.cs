@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class UI_LevelsPage : MonoBehaviour
 {
     [SerializeField] private Button backButton;
+    [SerializeField] private UI_LevelManager levelManager;
 
     private void Awake()
     {
@@ -14,5 +15,12 @@ public class UI_LevelsPage : MonoBehaviour
         {
             GameUIManager.Instance.ShowMainPage();
         }));
+        levelManager.InitLevelButtons();
+    }
+
+    private void Start()
+    {
+        //LevelLibrary lib = GameFlowManager.Instance.LevelLibrary;
+        
     }
 }
