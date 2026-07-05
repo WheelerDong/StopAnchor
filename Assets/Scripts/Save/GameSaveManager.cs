@@ -1,11 +1,20 @@
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 public static class GameSaveManager
 {
-    private const string SaveKey = "AGameName.SaveData";
+    private const string SaveFileName = "AGameName_SaveData.json";
 
     private static GameSaveData cachedData;
+
+    private static string SaveFilePath
+    {
+        get
+        {
+            return Path.Combine(Application.persistentDataPath, SaveFileName);
+        }
+    }
 
     public static GameSaveData Data
     {
@@ -95,32 +104,46 @@ public static class GameSaveManager
     public static void DeleteSave()
     {
         cachedData = new GameSaveData();
-        PlayerPrefs.DeleteKey(SaveKey);
-        PlayerPrefs.Save();
+
+        string path = SaveFilePath;
+
+        if (File.Exists(path))
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[GameSaveManager] Failed to delete save file: " + e.Message);
+            }
+        }
     }
 
     private static GameSaveData Load()
     {
-        if (!PlayerPrefs.HasKey(SaveKey))
-        {
-            return new GameSaveData();
-        }
+        string path = SaveFilePath;
 
-        string json = PlayerPrefs.GetString(SaveKey);
-
-        if (string.IsNullOrEmpty(json))
+        if (!File.Exists(path))
         {
             return new GameSaveData();
         }
 
         try
         {
+            string json = File.ReadAllText(path);
+
+            if (string.IsNullOrEmpty(json))
+            {
+                return new GameSaveData();
+            }
+
             GameSaveData data = JsonUtility.FromJson<GameSaveData>(json);
             return data ?? new GameSaveData();
         }
-        catch
+        catch (System.Exception e)
         {
-            Debug.LogWarning("[GameSaveManager] Save data is broken. A new save will be created.");
+            Debug.LogWarning("[GameSaveManager] Save data is broken or cannot be read. A new save will be created. " + e.Message);
             return new GameSaveData();
         }
     }
@@ -128,8 +151,25 @@ public static class GameSaveManager
     private static void Save(GameSaveData data)
     {
         cachedData = data;
-        PlayerPrefs.SetString(SaveKey, JsonUtility.ToJson(data));
-        PlayerPrefs.Save();
+
+        try
+        {
+            string directoryPath = Application.persistentDataPath;
+
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+
+            string json = JsonUtility.ToJson(data, true);
+            File.WriteAllText(SaveFilePath, json);
+
+            Debug.Log("[GameSaveManager] Save file saved to: " + SaveFilePath);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning("[GameSaveManager] Failed to save data: " + e.Message);
+        }
     }
 
     private static void EnsureLevelProgress(GameSaveData data, int levelCount)

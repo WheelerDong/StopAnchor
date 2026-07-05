@@ -457,7 +457,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f9e462cb9cb2a348bc68705e4b88632, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  anchorCount: 2
+  anchorCount: 1
   timeLimit: 20
   failCollider2D: {fileID: 6760581489956728957}
   playerPrefab: {fileID: 6880741371382533007, guid: aea5552e745b707459c64af40a0123bd,
