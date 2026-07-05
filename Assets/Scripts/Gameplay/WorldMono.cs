@@ -177,7 +177,7 @@ public class WorldMono : MonoBehaviour
                 continue;
             }
 
-            star.FollowWorldAngle(currentGlobalAngle);
+            //star.FollowWorldAngle(currentGlobalAngle);
         }
     }
 
@@ -242,7 +242,7 @@ public class WorldMono : MonoBehaviour
             }
 
             stars.Add(star);
-            star.BindWorld(this);
+            //star.BindWorld(this);
         }
     }
 
@@ -354,7 +354,7 @@ public class WorldMono : MonoBehaviour
                 continue;
             }
 
-            star.OnOwnerWorldActiveChanged(active);
+            //star.OnOwnerWorldActiveChanged(active);
         }
 
         for (int i = levelBackgrounds.Count - 1; i >= 0; i--)
