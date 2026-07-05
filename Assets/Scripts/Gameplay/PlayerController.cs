@@ -28,6 +28,9 @@ public class PlayerController : MonoBehaviour
 
     private bool hasBeenAirborne = false;
 
+    // 最近一次脚下碰撞体的法线
+    private Vector2 lastGroundNormal = Vector2.up;
+
     private bool IsPaused
     {
         get
@@ -44,10 +47,11 @@ public class PlayerController : MonoBehaviour
 
     private void Start()
     {
-        bool grounded = IsGrounded();
+        bool grounded = TryGetGroundHit(out RaycastHit2D hit);
 
         if (grounded)
         {
+            lastGroundNormal = hit.normal.normalized;
             currentJumpCount = maxJumpCount;
             hasBeenAirborne = false;
         }
@@ -62,7 +66,6 @@ public class PlayerController : MonoBehaviour
     {
         if (IsPaused)
         {
-            // 防止暂停期间或暂停前一帧的跳跃输入在恢复后触发
             jumpPressed = false;
             return;
         }
@@ -100,13 +103,26 @@ public class PlayerController : MonoBehaviour
         groundTouchTimer = 0f;
         hasBeenAirborne = false;
 
-        // 世界坐标垂直向上跳跃
-        rb.velocity = new Vector2(rb.velocity.x, jumpSpeed);
+        Vector2 jumpNormal = lastGroundNormal;
+
+        // 跳跃这一帧，再尝试刷新一次脚下法线，确保方向是最新的
+        if (TryGetGroundHit(out RaycastHit2D hit))
+        {
+            jumpNormal = hit.normal.normalized;
+            lastGroundNormal = jumpNormal;
+        }
+
+        // 保留沿地面切线方向的速度，只替换法线方向速度
+        Vector2 currentVelocity = rb.velocity;
+        float normalVelocity = Vector2.Dot(currentVelocity, jumpNormal);
+        Vector2 tangentVelocity = currentVelocity - jumpNormal * normalVelocity;
+
+        rb.velocity = tangentVelocity + jumpNormal * jumpSpeed;
     }
 
     private void HandleJumpRecharge()
     {
-        bool grounded = IsGrounded();
+        bool grounded = TryGetGroundHit(out RaycastHit2D hit);
 
         if (!grounded)
         {
@@ -115,8 +131,13 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // 必须离开过地面，并且现在不是向上运动，才开始恢复跳跃
-        if (hasBeenAirborne && rb.velocity.y <= 0.01f)
+        lastGroundNormal = hit.normal.normalized;
+
+        // 不再使用 rb.velocity.y，而是使用角色沿地面法线方向的速度
+        float velocityAlongGroundNormal = Vector2.Dot(rb.velocity, lastGroundNormal);
+
+        // 必须离开过地面，并且现在不是沿地面法线向外运动，才恢复跳跃
+        if (hasBeenAirborne && velocityAlongGroundNormal <= 0.01f)
         {
             groundTouchTimer += Time.fixedDeltaTime;
 
@@ -135,12 +156,17 @@ public class PlayerController : MonoBehaviour
 
     private bool IsGrounded()
     {
+        return TryGetGroundHit(out _);
+    }
+
+    private bool TryGetGroundHit(out RaycastHit2D hit)
+    {
         Bounds bounds = bodyCollider.bounds;
 
         Vector2 origin = bounds.center;
         float castDistance = bounds.extents.y + groundCheckExtraDistance;
 
-        RaycastHit2D hit = Physics2D.CircleCast(
+        hit = Physics2D.CircleCast(
             origin,
             groundCheckRadius,
             Vector2.down,
@@ -171,5 +197,11 @@ public class PlayerController : MonoBehaviour
 
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(end, groundCheckRadius);
+
+        if (Application.isPlaying)
+        {
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawLine(end, end + lastGroundNormal * 0.6f);
+        }
     }
 }
