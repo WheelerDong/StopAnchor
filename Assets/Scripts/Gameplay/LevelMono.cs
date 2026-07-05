@@ -20,6 +20,9 @@ public class LevelMono : MonoBehaviour
 
     [Tooltip("玩家暂时不在任何 World Collider 内时，是否保持上一个激活 World。")]
     [SerializeField] private bool keepCurrentWorldWhenPlayerOutsideAllWorlds = true;
+    
+    private LevelBackgroundMono levelBackgroundMono;
+    public LevelBackgroundMono LevelBackgroundMono { get => levelBackgroundMono; }
 
     private readonly List<WorldMono> worlds = new List<WorldMono>();
 
@@ -42,6 +45,7 @@ public class LevelMono : MonoBehaviour
         }
 
         hasFailed = false;
+        levelBackgroundMono = GetComponentInChildren<LevelBackgroundMono>();
 
         SpawnPlayerIfNeeded();
         SetupFailCollider();

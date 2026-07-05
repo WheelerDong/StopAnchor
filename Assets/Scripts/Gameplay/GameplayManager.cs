@@ -41,6 +41,13 @@ public class GameplayManager : SingletonMono<GameplayManager>
             GameplayUIManager.Instance.Init();
             GameplayUIManager.Instance.UpdateAnchorUI(currentAnchorCount);
         }
+        
+        Camera mainCamera = Camera.main;
+        CameraFitter cameraFitter = mainCamera.GetComponent<CameraFitter>();
+        if (cameraFitter != null)
+        {
+            cameraFitter.Init(levelMono.LevelBackgroundMono?.transform);
+        }
 
         UpdateTimeLimitUI(true);
     }
