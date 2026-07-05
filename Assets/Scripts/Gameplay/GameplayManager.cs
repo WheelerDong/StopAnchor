@@ -174,6 +174,11 @@ public class GameplayManager : SingletonMono<GameplayManager>
         Pause();
     }
 
+    public void FailThisLevel()
+    {
+        
+    }
+
     public void NextLevel()
     {
         isPaused = false;

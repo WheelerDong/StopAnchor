@@ -770,9 +770,9 @@ RectTransform:
   - {fileID: 1398425329}
   - {fileID: 97536733}
   - {fileID: 917177886}
+  - {fileID: 2029026925}
   - {fileID: 1165226783}
   - {fileID: 692300641}
-  - {fileID: 2029026925}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1124,11 +1124,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: FailedPage
       objectReference: {fileID: 0}
-    - target: {fileID: 3337448756979897499, guid: 5c40f38921e272041b2eb49ecc3914f8,
+    - target: {fileID: 405499389289662664, guid: 5c40f38921e272041b2eb49ecc3914f8,
         type: 3}
-      propertyPath: restart
-      value: 
-      objectReference: {fileID: 5777640592180921568}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7917212606528084794, guid: 5c40f38921e272041b2eb49ecc3914f8,
         type: 3}
       propertyPath: m_Pivot.x
@@ -1244,18 +1244,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 495534c65720d4b4fa9cbdebf75b241f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &5777640592180921568 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3737449859934685295, guid: 5c40f38921e272041b2eb49ecc3914f8,
-    type: 3}
-  m_PrefabInstance: {fileID: 5777640592180921566}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1001 &6639941289363271980
