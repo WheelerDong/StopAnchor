@@ -146,9 +146,9 @@ public class GameplayManager : SingletonMono<GameplayManager>
         // 这里先暂停游戏。
         // 如果你之后有失败界面，可以在这里调用：
         // GameplayUIManager.Instance.ShowLosePage();
-        GameplayUIManager.Instance.ShowFailedPage();
+        FailThisLevel();
 
-        Pause();
+        
     }
 
     public void AddStar()
@@ -176,7 +176,8 @@ public class GameplayManager : SingletonMono<GameplayManager>
 
     public void FailThisLevel()
     {
-        
+        GameplayUIManager.Instance.ShowFailedPage();
+        Pause();
     }
 
     public void NextLevel()

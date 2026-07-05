@@ -7,6 +7,9 @@ public class LevelMono : MonoBehaviour
     [SerializeField] public int anchorCount;
     [SerializeField] public float timeLimit = -1f;
 
+    [SerializeField] private LevelFailCollider2D failCollider2D;
+    private bool hasFailed = false;
+
     [Header("Player Spawn")]
     [SerializeField] private PlayerMono playerPrefab;
     [SerializeField] private Transform playerSpawnPoint;
@@ -38,14 +41,47 @@ public class LevelMono : MonoBehaviour
             return;
         }
 
-        //Debug.Log("levelMono.Init");
-        
+        hasFailed = false;
+
         SpawnPlayerIfNeeded();
+        SetupFailCollider();
         CacheChildWorlds();
 
         GameplayManager.Instance.Init(this);
         IsInitialized = true;
         RefreshCurrentActiveWorld(true);
+    }
+    
+    private void SetupFailCollider()
+    {
+        if (failCollider2D == null)
+        {
+            Debug.LogWarning($"{nameof(LevelMono)} 没有配置 Fail Collider2D。", this);
+            return;
+        }
+        
+        failCollider2D.Init(this);
+    }
+
+    public void NotifyPlayerEnterFailCollider(PlayerMono player)
+    {
+        if (!IsInitialized)
+        {
+            return;
+        }
+
+        if (hasFailed)
+        {
+            return;
+        }
+
+        if (player == null || player != playerInstance)
+        {
+            return;
+        }
+
+        hasFailed = true;
+        Fail();
     }
 
     private void Start()
@@ -66,6 +102,10 @@ public class LevelMono : MonoBehaviour
         RefreshCurrentActiveWorld(false);
     }
 
+    private void Fail()
+    {
+        GameplayManager.Instance.RestartLevel();
+    }
     private void SpawnPlayerIfNeeded()
     {
         if (playerInstance != null)
