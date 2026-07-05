@@ -21,9 +21,17 @@ public class GameFlowManager : SingletonMono<GameFlowManager>
     private LevelMono currentLevelInstance;
 
     public int CurrentLevelIndex => currentLevel;
+    public int CurrentLevelBestStarCount => GetLevelBestStarCount(currentLevel);
+
+    protected override void Awake()
+    {
+        base.Awake();
+        SyncCurrentLevelFromSave();
+    }
 
     public void PlayCurrentLevel()
     {
+        SyncCurrentLevelFromSave();
         PlayLevel(currentLevel);
     }
     
@@ -65,6 +73,11 @@ public class GameFlowManager : SingletonMono<GameFlowManager>
 
         isLoadingLevel = true;
         currentLevel = levelIndex;
+
+        if (!GameSaveManager.IsLevelCompleted(currentLevel))
+        {
+            GameSaveManager.SetCurrentLevel(currentLevel, GetLevelCount());
+        }
 
         AsyncOperation loadOperation = SceneManager.LoadSceneAsync(gameplaySceneName, LoadSceneMode.Single);
 
@@ -166,6 +179,49 @@ public class GameFlowManager : SingletonMono<GameFlowManager>
     public void GoIntoLobby()
     {
         SceneManager.LoadScene(lobbySceneName, LoadSceneMode.Single);
+    }
+
+    public void CompleteCurrentLevel(int starCount)
+    {
+        if (!IsValidLevelIndex(currentLevel))
+        {
+            return;
+        }
+
+        GameSaveManager.CompleteLevel(currentLevel, starCount, GetLevelCount());
+    }
+
+    public int GetLevelBestStarCount(int levelIndex)
+    {
+        return GameSaveManager.GetBestStarCount(levelIndex);
+    }
+
+    public bool IsLevelCompleted(int levelIndex)
+    {
+        return GameSaveManager.IsLevelCompleted(levelIndex);
+    }
+
+    private void SyncCurrentLevelFromSave()
+    {
+        int levelCount = GetLevelCount();
+
+        if (levelCount <= 0)
+        {
+            currentLevel = 0;
+            return;
+        }
+
+        currentLevel = GameSaveManager.GetCurrentLevelIndex(levelCount);
+    }
+
+    private int GetLevelCount()
+    {
+        if (levelLibrary == null || levelLibrary.levels == null)
+        {
+            return 0;
+        }
+
+        return levelLibrary.levels.Count;
     }
 
     public void QuitGame()

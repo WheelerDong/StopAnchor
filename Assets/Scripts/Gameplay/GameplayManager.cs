@@ -23,6 +23,7 @@ public class GameplayManager : SingletonMono<GameplayManager>
     public bool IsPaused => isPaused;
     public float TimeLimit => timeLimit;
     public bool HasTimeLimit => timeLimit >= 0f;
+    public int CurrentStarCount => currentStarCount;
 
     public void Init(LevelMono levelMono)
     {
@@ -176,6 +177,11 @@ public class GameplayManager : SingletonMono<GameplayManager>
         }
 
         isGameEnded = true;
+
+        if (GameFlowManager.Instance != null)
+        {
+            GameFlowManager.Instance.CompleteCurrentLevel(currentStarCount);
+        }
 
         GameplayUIManager.Instance.ShowWinPage();
         Pause();
