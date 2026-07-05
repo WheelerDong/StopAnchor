@@ -40,6 +40,9 @@ public class ObstacleMono : MonoBehaviour
 
     private Coroutine returnCoroutine;
 
+    // 防止同一次锁定过程中，多次点击导致重复返还 Anchor
+    private bool hasGivenAnchorBackForCurrentLock = false;
+
     private bool IsPaused
     {
         get
@@ -158,8 +161,10 @@ public class ObstacleMono : MonoBehaviour
             return;
         }
 
+        // 已经被锁定时，再次点击会提前回正，不再等待 returnDelay
         if (!canRotate)
         {
+            StartReturnImmediately();
             return;
         }
 
@@ -209,20 +214,45 @@ public class ObstacleMono : MonoBehaviour
         canRotate = false;
         PinGear();
 
+        hasGivenAnchorBackForCurrentLock = false;
+
         StopReturnCoroutineOnly();
 
-        returnCoroutine = StartCoroutine(ReturnToWorldAngle());
+        returnCoroutine = StartCoroutine(ReturnToWorldAngle(false));
     }
 
-    private IEnumerator ReturnToWorldAngle()
+    private void StartReturnImmediately()
     {
-        yield return WaitForUnpausedSeconds(returnDelay);
+        if (IsPaused)
+        {
+            return;
+        }
+
+        if (isNormalObstacle)
+        {
+            return;
+        }
+
+        if (!InitializeDefaultState())
+        {
+            return;
+        }
+
+        StopReturnCoroutineOnly();
+
+        returnCoroutine = StartCoroutine(ReturnToWorldAngle(true));
+    }
+
+    private IEnumerator ReturnToWorldAngle(bool skipDelay)
+    {
+        if (!skipDelay)
+        {
+            yield return WaitForUnpausedSeconds(returnDelay);
+        }
+
         yield return WaitUntilUnpaused();
 
-        if (GameplayManager.Instance != null)
-        {
-            GameplayManager.Instance.GiveAnchorBack();
-        }
+        GiveAnchorBackOnce();
 
         if (!CanReceiveWorldControl())
         {
@@ -274,6 +304,21 @@ public class ObstacleMono : MonoBehaviour
         if (unlockAfterReturn)
         {
             UnlockObstacle();
+        }
+    }
+
+    private void GiveAnchorBackOnce()
+    {
+        if (hasGivenAnchorBackForCurrentLock)
+        {
+            return;
+        }
+
+        hasGivenAnchorBackForCurrentLock = true;
+
+        if (GameplayManager.Instance != null)
+        {
+            GameplayManager.Instance.GiveAnchorBack();
         }
     }
 
