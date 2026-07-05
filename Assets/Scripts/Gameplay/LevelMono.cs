@@ -5,6 +5,7 @@ using UnityEngine;
 public class LevelMono : MonoBehaviour
 {
     [SerializeField] public int anchorCount;
+    [SerializeField] public float timeLimit = -1f;
 
     [Header("Player Spawn")]
     [SerializeField] private PlayerMono playerPrefab;

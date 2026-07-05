@@ -75,6 +75,9 @@ public class WorldMono : MonoBehaviour
 
     private void Update()
     {
+        if (GameplayManager.Instance.IsPaused)
+            return;
+            
         EnsureInitialized();
 
         if (!isActiveWorld)
