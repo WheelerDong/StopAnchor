@@ -1,10 +1,11 @@
 using System.Collections;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D))]
 public class ObstacleMono : MonoBehaviour
 {
-    [Header("Rotation Target")]
-    [SerializeField] private Transform rotateTarget;
+    private Transform rotateTarget;
+    private Rigidbody2D rotateTargetRigidbody2D;
 
     [Header("Rotation Center")]
     [SerializeField] private Transform rotationCenter;
@@ -31,7 +32,7 @@ public class ObstacleMono : MonoBehaviour
     private Vector3 defaultOffsetFromCenter;
     private Quaternion defaultRotation;
 
-    // rotateTarget 当前相对初始状态的旋转角度
+    // 板子当前相对初始状态的旋转角度
     private float currentAngle = 0f;
 
     private bool canRotate = true;
@@ -47,10 +48,54 @@ public class ObstacleMono : MonoBehaviour
         }
     }
 
+    private void Reset()
+    {
+        CacheAndConfigureRigidbody2D();
+    }
+
+    private void Awake()
+    {
+        CacheAndConfigureRigidbody2D();
+    }
+
     private void Start()
     {
         ValidateGearRequirement();
         InitializeDefaultState();
+    }
+
+    private void CacheAndConfigureRigidbody2D()
+    {
+        // 现在 ObstacleMono 就放在板子本身上，所以 rotateTarget 永远是自身 transform
+        rotateTarget = transform;
+
+        rotateTargetRigidbody2D = GetComponent<Rigidbody2D>();
+
+        if (rotateTargetRigidbody2D == null)
+        {
+            return;
+        }
+
+        // 旋转平台建议使用 Kinematic，由代码控制运动
+        rotateTargetRigidbody2D.bodyType = RigidbodyType2D.Kinematic;
+
+        // 平台自身不受重力影响
+        rotateTargetRigidbody2D.gravityScale = 0f;
+
+        // 开启插值，视觉上更平滑
+        rotateTargetRigidbody2D.interpolation = RigidbodyInterpolation2D.Interpolate;
+
+        // 防止旋转/移动过快时产生明显穿透
+        rotateTargetRigidbody2D.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+
+        // 确保物理模拟开启
+        rotateTargetRigidbody2D.simulated = true;
+
+        // Kinematic 物体也产生更完整的碰撞接触
+        rotateTargetRigidbody2D.useFullKinematicContacts = true;
+
+        // 不冻结位置和旋转，否则 MovePosition / MoveRotation 可能表现异常
+        rotateTargetRigidbody2D.constraints = RigidbodyConstraints2D.None;
     }
 
     public void BindWorld(WorldMono world)
@@ -101,6 +146,8 @@ public class ObstacleMono : MonoBehaviour
 
     private void OnMouseDown()
     {
+        Debug.Log("鼠标点击");
+
         if (IsPaused)
         {
             return;
@@ -169,10 +216,7 @@ public class ObstacleMono : MonoBehaviour
 
     private IEnumerator ReturnToWorldAngle()
     {
-        // 暂停期间不计入 returnDelay
         yield return WaitForUnpausedSeconds(returnDelay);
-
-        // 如果 delay 正好结束时处于暂停状态，等恢复后再继续
         yield return WaitUntilUnpaused();
 
         if (GameplayManager.Instance != null)
@@ -211,12 +255,12 @@ public class ObstacleMono : MonoBehaviour
                 float nextAngle = Mathf.MoveTowards(
                     currentAngle,
                     targetAngle,
-                    returnSpeed * Time.deltaTime
+                    returnSpeed * Time.fixedDeltaTime
                 );
 
                 RotateToAngle(nextAngle);
 
-                yield return null;
+                yield return new WaitForFixedUpdate();
             }
 
             if (CanReceiveWorldControl())
@@ -319,23 +363,9 @@ public class ObstacleMono : MonoBehaviour
             return;
         }
 
-        RotateAroundCenter(deltaAngle);
+        MoveRigidbodyToAngle(targetAngle);
 
         currentAngle = targetAngle;
-    }
-
-    private void RotateAroundCenter(float deltaAngle)
-    {
-        if (rotateTarget == null || rotationCenter == null)
-        {
-            return;
-        }
-
-        rotateTarget.RotateAround(
-            rotationCenter.position,
-            Vector3.forward,
-            deltaAngle
-        );
     }
 
     private void SnapToAngle(float angle)
@@ -350,18 +380,28 @@ public class ObstacleMono : MonoBehaviour
             return;
         }
 
-        Quaternion angleRotation = Quaternion.AngleAxis(
-            angle,
-            Vector3.forward
-        );
-
-        rotateTarget.position =
-            rotationCenter.position + angleRotation * defaultOffsetFromCenter;
-
-        rotateTarget.rotation =
-            angleRotation * defaultRotation;
+        MoveRigidbodyToAngle(angle);
 
         currentAngle = angle;
+    }
+
+    private void MoveRigidbodyToAngle(float angle)
+    {
+        if (rotateTargetRigidbody2D == null || rotationCenter == null)
+        {
+            return;
+        }
+
+        Quaternion angleRotation = Quaternion.AngleAxis(angle, Vector3.forward);
+
+        Vector3 targetWorldPosition =
+            rotationCenter.position + angleRotation * defaultOffsetFromCenter;
+
+        Quaternion targetWorldRotation =
+            angleRotation * defaultRotation;
+
+        rotateTargetRigidbody2D.MovePosition(targetWorldPosition);
+        rotateTargetRigidbody2D.MoveRotation(targetWorldRotation.eulerAngles.z);
     }
 
     private bool InitializeDefaultState()
@@ -371,9 +411,17 @@ public class ObstacleMono : MonoBehaviour
             return true;
         }
 
+        CacheAndConfigureRigidbody2D();
+
         if (rotateTarget == null)
         {
             Debug.LogWarning($"{name} 没有设置 rotateTarget", this);
+            return false;
+        }
+
+        if (rotateTargetRigidbody2D == null)
+        {
+            Debug.LogError($"{name} 没有 Rigidbody2D，无法使用 MoveRotation", this);
             return false;
         }
 
@@ -452,6 +500,8 @@ public class ObstacleMono : MonoBehaviour
         returnDelay = Mathf.Max(0f, returnDelay);
         returnSpeed = Mathf.Max(0f, returnSpeed);
 
+        CacheAndConfigureRigidbody2D();
+
         if (!isNormalObstacle && gearMono == null)
         {
             Debug.LogError($"{name} 的 isNormalObstacle 为 false，必须设置 GearMono 参数", this);
@@ -492,7 +542,6 @@ public class ObstacleMono : MonoBehaviour
 
     private void TriggerTrap(PlayerMono player)
     {
-        // 例如：玩家死亡、重开关卡、播放特效等
         GameplayManager.Instance.RestartLevel();
     }
 }

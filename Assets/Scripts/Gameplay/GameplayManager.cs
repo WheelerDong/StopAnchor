@@ -241,11 +241,13 @@ public class GameplayManager : SingletonMono<GameplayManager>
     {
         if (isGameEnded)
         {
+            Debug.Log("游戏已经结束，无法使用Anchor");
             return false;
         }
 
         if (currentAnchorCount <= 0)
         {
+            Debug.Log("Anchor数量不够");
             return false;
         }
 
